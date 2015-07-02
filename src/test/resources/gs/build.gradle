@@ -5,7 +5,7 @@ buildscript {
         //mavenCentral()
     }
     dependencies {
-        classpath('org.grooscript:grooscript-gradle-plugin:1.1.0-SNAPSHOT') {
+        classpath('org.grooscript:grooscript-gradle-plugin:1.2.0-SNAPSHOT') {
             exclude module: "groovy"
             exclude module: "groovy-json"
         }
@@ -15,11 +15,15 @@ buildscript {
 apply plugin: 'org.grooscript.conversion'
 
 grooscript {
-    source = ['src/script.groovy']
-    destination = 'js/script.js'
+    classPath = ['src']
 }
 
-task templates(type: org.grooscript.gradle.TemplatesTask, dependsOn: 'convert') {
+task convertScript(type: org.grooscript.gradle.ConvertTask) {
+    source = [file('src/script.groovy')]
+    destination = file('js')
+}
+
+task templates(type: org.grooscript.gradle.TemplatesTask, dependsOn: 'convertScript') {
     templatesPath = '..'
     templates = ['books.gtpl', 'numbers.gtpl']
     destinationFile = 'js/Templates.js'
@@ -38,6 +42,14 @@ task requireJsDaemon(type: org.grooscript.gradle.RequireJsThreadTask) {
 
 task gs << { task ->
     println "Project: $project"
-    println "File: ${project.file('src/script.groovy')}"
+    println "File: ${file('src/script.groovy')}"
     println "I'm $task.project.name"
 }
+
+task kk << {
+    println 'listening...'
+    while (true) {}
+    println 'end listen.'
+}
+
+kk.dependsOn 'convertScript'

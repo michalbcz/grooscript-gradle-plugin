@@ -1,6 +1,8 @@
 package org.grooscript.gradle
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputDirectory
 import org.grooscript.convert.ConversionOptions
 
 /**
@@ -9,8 +11,10 @@ import org.grooscript.convert.ConversionOptions
  */
 class GrooscriptTask extends DefaultTask {
 
-    List<String> source
-    String destination
+    @OutputDirectory
+    File destination
+    @InputFiles
+    List<File> source
     List<String> classPath
     Closure customization
     String initialText

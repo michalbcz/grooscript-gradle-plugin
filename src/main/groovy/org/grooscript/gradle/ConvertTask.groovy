@@ -1,7 +1,6 @@
 package org.grooscript.gradle
 
 import org.gradle.api.GradleException
-import org.gradle.api.Task
 import org.gradle.api.tasks.TaskAction
 import org.grooscript.GrooScript
 
@@ -13,7 +12,11 @@ class ConvertTask extends GrooscriptTask {
 
     @TaskAction
     void convert() {
+        println 'Starting convert...'
+        println ' source: ' + source
+        println ' destination: ' + destination
         checkProperties()
+        source.add(project.file('src/main/groovy/gs/Initial.groovy'))
         if (!source || !destination) {
             throw new GradleException("Need define source and destination.")
         } else {
@@ -22,10 +25,11 @@ class ConvertTask extends GrooscriptTask {
     }
 
     private void doConversion() {
+        println 'Do conversion' + inputs.files.files
         GrooScript.clearAllOptions()
-        conversionProperties.each { key, value ->
+        conversionProperties.each { String key, value ->
             GrooScript.setConversionProperty(key, value)
         }
-        GrooScript.convert(source.collect { project.file(it) }, project.file(destination))
+        GrooScript.convert(source, destination)
     }
 }

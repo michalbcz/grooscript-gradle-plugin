@@ -13,18 +13,6 @@ import spock.lang.Unroll
  */
 class ConvertTaskSpec extends Specification {
 
-    static final SOURCE = ['source']
-    static final DESTINATION = 'destination'
-    Project project
-    ConvertTask task
-
-    def setup() {
-        project = ProjectBuilder.builder().build()
-
-        task = project.task('convert', type: ConvertTask)
-        task.project = project
-    }
-
     def 'create the task'() {
         expect:
         task instanceof ConvertTask
@@ -33,7 +21,7 @@ class ConvertTaskSpec extends Specification {
     def 'by default properties come from project.grooscript'() {
         given:
         GroovySpy(GrooScript, global: true)
-        project.extensions.grooscript = [source: ['1'], destination: '2', customization: { -> },
+        project.extensions.grooscript = [source: [new File('1')], destination: new File('2'), customization: { -> },
                 classPath: ['3'], initialText: 'initial', finalText: 'final',
                 recursive: true, mainContextScope: ['7'], addGsLib: 'grooscript', requireJs: false]
 
@@ -50,7 +38,7 @@ class ConvertTaskSpec extends Specification {
         1 * GrooScript.setConversionProperty('recursive', project.grooscript.recursive)
         1 * GrooScript.setConversionProperty('mainContextScope', project.grooscript.mainContextScope)
         1 * GrooScript.setConversionProperty('addGsLib', project.grooscript.addGsLib)
-        1 * GrooScript.convert({ it instanceof List<File> && it.size() == 1}, { it instanceof File }) >> null
+        1 * GrooScript.convert([new File('1')], new File('2')) >> null
         1 * GrooScript.setConversionProperty('requireJs', project.grooscript.requireJs)
         0 * _
     }
@@ -58,16 +46,16 @@ class ConvertTaskSpec extends Specification {
     def 'doesn\'t override task properties'() {
         given:
         GroovySpy(GrooScript, global: true)
-        project.extensions.grooscript = [source: ['1'], destination: '2', customization: { -> },
-                classPath: ['3'], recursive: false]
         task.source = SOURCE
+        task.destination = DESTINATION
+        project.extensions.grooscript = [source: [new File('1')], destination: new File('2'), customization: { -> },
+                classPath: ['3'], recursive: false]
 
         when:
         task.convert()
 
         then:
-        1 * GrooScript.convert({ it instanceof List<File> && it.collect { file -> file.name} == SOURCE},
-                { it instanceof File })
+        1 * GrooScript.convert(SOURCE, DESTINATION)
     }
 
     @Unroll
@@ -82,9 +70,9 @@ class ConvertTaskSpec extends Specification {
 
         where:
         source  |destination
-        ['one'] |null
+        SOURCE |null
         null    |null
-        null    |'two'
+        null    |DESTINATION
     }
 
     def 'run the task with correct data'() {
@@ -98,8 +86,9 @@ class ConvertTaskSpec extends Specification {
         task.convert()
 
         then:
-        1 * GrooScript.convert({ it instanceof List<File> && it.collect { file -> file.name} == SOURCE},
-                { it instanceof File && it.name == DESTINATION })
+        1 * GrooScript.convert(SOURCE, DESTINATION)
+        task.inputs.files.files == [new File(projectDir + System.getProperty('file.separator') + SOURCE[0])] as Set
+        task.outputs.files.files == [new File(projectDir + System.getProperty('file.separator') + DESTINATION)] as Set
     }
 
     def 'convert tasks with options'() {
@@ -129,7 +118,21 @@ class ConvertTaskSpec extends Specification {
         1 * GrooScript.setConversionProperty('mainContextScope', task.mainContextScope)
         1 * GrooScript.setConversionProperty('addGsLib', task.addGsLib)
         1 * GrooScript.setConversionProperty('requireJs', task.requireJs)
-        1 * GrooScript.convert(_, _) >> null
+        1 * GrooScript.convert(SOURCE, DESTINATION) >> null
         0 * _
+    }
+
+    static final SOURCE = [new File('source')]
+    static final DESTINATION = new File('destination')
+    Project project
+    ConvertTask task
+    String projectDir
+
+    def setup() {
+        project = ProjectBuilder.builder().build()
+
+        task = project.task('convert', type: ConvertTask)
+        task.project = project
+        projectDir = task.project.projectDir.absolutePath
     }
 }
